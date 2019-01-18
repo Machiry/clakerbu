@@ -38,3 +38,5 @@ python clakerbu.py -l /llvm_bitcode_out -k <PATH_WHERE_YOU_RAN_MAKE> -m <PATH_TO
 ```
 
 The driver bitcode files will be present in the folder `<LLVM_BC_OUT>` with extension `final.linked.bc` along with other intermediate files.
+
+The kernel modules end with `..final.linked.bc` i.e., if you find `iproc-rng200..final.linked.bc`, that means it is the bitcode file for `iproc-rng200.ko` from the kernel build.
