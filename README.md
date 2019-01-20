@@ -1,4 +1,7 @@
 # clakerbu
+
+[![License](https://img.shields.io/github/license/angr/angr.svg)](https://github.com/ucsb-seclab/difuze/blob/master/LICENSE)
+
 Tool to get cumulative LLVM bitcode files for kernel drivers for architectures `arm32` and `aarch64`.
 
 This tool helps you get cumulative bitcode files for each of the kernel drivers. This is helpful for any instrumentation tasks based on `LLVM`. For instance, You can use this tool to build the bitcode file for a driver, perform instrumentation, convert it back to object file, and then use the `make` to create the kernel with the instrumented driver.
