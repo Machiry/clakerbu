@@ -25,6 +25,18 @@ def setup_args():
     required_named.add_argument('-n', action='store', dest='arch_num',
                                 help='Destination architecture, 32 bit (1) or 64 bit (2).', type=int,
                                 required=True)
+    required_named.add_argument('-isclang', action='store_true', dest='is_clang_build',
+                                help='flag to indicate that clang was used to built the kernel')
+
+    required_named.add_argument('-clangp', action='store', dest='clang_path',
+                                help='Absolute path to the clang binary (if not provided, the one '
+                                     'available in the path will be used)',
+                                default=get_bin_path("clang"))
+
+    required_named.add_argument('-llvmlinkp', action='store', dest='llvmlink_path',
+                                help='Absolute path to the llvm-link binary (if not provided, the one '
+                                     'available in the path will be used)',
+                                default=get_bin_path("llvm-link"))
 
     return parser
 
@@ -37,8 +49,8 @@ def get_bin_path(bin_name):
 def main():
     arg_parser = setup_args()
     parsed_args = arg_parser.parse_args()
-    clang_path = get_bin_path("clang")
-    llvm_link_path = get_bin_path("llvm-link")
+    clang_path = parsed_args.clang_path
+    llvm_link_path = parsed_args.llvmlink_path
     if (not os.path.exists(clang_path)) or (not os.path.exists(llvm_link_path)):
         log_error("clang or llvm-link not available in the system path.")
         sys.exit(-1)
@@ -47,7 +59,7 @@ def main():
     os.system("mkdir -p " + parsed_args.llvm_bc_out)
     # build everything.
     build_drivers(compile_commands, linker_commands, parsed_args.kernel_src_dir, parsed_args.arch_num,
-                  clang_path, llvm_link_path, parsed_args.llvm_bc_out)
+                  clang_path, llvm_link_path, parsed_args.llvm_bc_out, parsed_args.is_clang_build)
 
 
 if __name__ == "__main__":

@@ -56,10 +56,71 @@ def _is_allowed_flag(curr_flag):
     return True
 
 
+def _get_llvm_build_str_from_llvm(clang_path, build_args, src_root_dir, target_arch, work_dir,
+                                  src_file_path, output_file_path, llvm_bit_code_out):
+    """
+            Given a compilation command from the json, this function returns the clang based build string.
+            assuming that the original build was done with clang.
+        :param clang_path: Path to clang.
+        :param build_args: original arguments to the compiler.
+        :param src_root_dir: Path to the kernel source directory.
+        :param target_arch: Number representing target architecture/
+        :param work_dir: Directory where the original command was run.
+        :param src_file_path: Path to the source file being compiled.
+        :param output_file_path: Path to the original object file.
+        :param llvm_bit_code_out: Folder where all the linked bitcode files should be stored.
+        :return:
+    """
+    curr_src_file = src_file_path
+    modified_build_args = list()
+
+    modified_build_args.append(clang_path)
+    # append emit-llvm path
+    modified_build_args.append(EMIT_LLVM_FLAG)
+    # handle debug flags
+    for curr_d_flg in DEBUG_INFO_FLAGS:
+        modified_build_args.append(curr_d_flg)
+    # handle optimization flags
+    for curr_op in TARGET_OPTIMIZATION_FLAGS:
+        modified_build_args.append(curr_op)
+
+    rel_src_file_name = curr_src_file
+    if str(curr_src_file).startswith("../"):
+        rel_src_file_name = curr_src_file[3:]
+    if str(curr_src_file).startswith('/'):
+        rel_src_file_name = os.path.abspath(curr_src_file)
+        if src_root_dir[-1] == '/':
+            rel_src_file_name = rel_src_file_name[len(src_root_dir):]
+        else:
+            rel_src_file_name = rel_src_file_name[len(src_root_dir) + 1:]
+    # replace output file with llvm bc file
+    src_dir_name = os.path.dirname(rel_src_file_name)
+    src_file_name = os.path.basename(curr_src_file)
+
+    curr_output_dir = os.path.join(llvm_bit_code_out, src_dir_name)
+    os.system('mkdir -p ' + curr_output_dir)
+
+    curr_output_file = os.path.abspath(os.path.join(curr_output_dir, src_file_name[:-2] + '.llvm.bc'))
+
+    for curr_op in build_args:
+        # ignore only optimization flags.
+        if str(curr_op)[:2] != "-O":
+            modified_build_args.append(curr_op)
+
+    # tell clang to compile.
+    modified_build_args.append("-c")
+    modified_build_args.append(curr_src_file)
+    modified_build_args.append("-o")
+    modified_build_args.append(curr_output_file)
+
+    return work_dir, output_file_path, curr_output_file, ' '.join(modified_build_args)
+
+
 def _get_llvm_build_str(clang_path, build_args, src_root_dir, target_arch, work_dir,
                         src_file_path, output_file_path, llvm_bit_code_out):
     """
         Given a compilation command from the json, this function returns the clang based build string.
+        assuming that the original was built with gcc
     :param clang_path: Path to clang.
     :param build_args: original arguments to the compiler.
     :param src_root_dir: Path to the kernel source directory.
@@ -219,7 +280,7 @@ def _process_recursive_linker_commands(linker_commands, kernel_src_dir, llvm_lin
 
 
 def build_drivers(compilation_commands, linker_commands, kernel_src_dir,
-                  target_arch, clang_path, llvm_link_path, llvm_bit_code_out):
+                  target_arch, clang_path, llvm_link_path, llvm_bit_code_out, is_clang_build):
     """
         The main method that performs the building and linking of the driver files.
     :param compilation_commands: Parsed compilation commands from the json.
@@ -229,6 +290,7 @@ def build_drivers(compilation_commands, linker_commands, kernel_src_dir,
     :param clang_path: Path to clang.
     :param llvm_link_path: Path to llvm-link
     :param llvm_bit_code_out: Folder where all the linked bitcode files should be stored.
+    :param is_clang_build: Flag to indicate whether the current built is clang build.
     :return: True
     """
     output_llvm_sh_file = os.path.join(llvm_bit_code_out, 'llvm_build.sh')
@@ -237,11 +299,21 @@ def build_drivers(compilation_commands, linker_commands, kernel_src_dir,
     all_compilation_commands = []
     obj_bc_map = {}
     for curr_compilation_command in compilation_commands:
-        wd, obj_file, bc_file, build_str = _get_llvm_build_str(clang_path, curr_compilation_command.curr_args,
-                                                               kernel_src_dir, target_arch,
-                                                               curr_compilation_command.work_dir,
-                                                               curr_compilation_command.src_file,
-                                                               curr_compilation_command.output_file, llvm_bit_code_out)
+        if is_clang_build:
+            wd, obj_file, bc_file, build_str = _get_llvm_build_str_from_llvm(clang_path,
+                                                                             curr_compilation_command.curr_args,
+                                                                             kernel_src_dir, target_arch,
+                                                                             curr_compilation_command.work_dir,
+                                                                             curr_compilation_command.src_file,
+                                                                             curr_compilation_command.output_file,
+                                                                             llvm_bit_code_out)
+        else:
+            wd, obj_file, bc_file, build_str = _get_llvm_build_str(clang_path, curr_compilation_command.curr_args,
+                                                                   kernel_src_dir, target_arch,
+                                                                   curr_compilation_command.work_dir,
+                                                                   curr_compilation_command.src_file,
+                                                                   curr_compilation_command.output_file,
+                                                                   llvm_bit_code_out)
         all_compilation_commands.append((wd, build_str))
         obj_bc_map[obj_file] = bc_file
         fp_out.write(build_str + "\n")
