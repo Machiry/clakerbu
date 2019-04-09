@@ -4,12 +4,20 @@ from log_stuff import *
 
 # UTILITIES FUNCTION
 # These flags should be removed from gcc cmdline
-INVALID_GCC_FLAGS = ['-mno-thumb-interwork', '-fconserve-stack', '-fno-var-tracking-assignments',
+"""INVALID_GCC_FLAGS = ['-mno-thumb-interwork', '-fconserve-stack', '-fno-var-tracking-assignments',
                      '-fno-delete-null-pointer-checks', '--param=allow-store-data-races=0',
                      '-Wno-unused-but-set-variable', '-Werror=frame-larger-than=1', '-Werror', '-Wall',
-                     '-fno-jump-tables', '-nostdinc', '-mpc-relative-literal-loads', '-mabi=lp64']
+                     '-fno-jump-tables', '-nostdinc', '-mpc-relative-literal-loads', '-mabi=lp64']"""
+INVALID_GCC_FLAGS = ['-mno-fp-ret-in-387', '-fasan-shadow-offset=0xdffffc0000000000', '-fno-conserve-stack',
+                     '-mno-thumb-interwork', '-fconserve-stack', '-fno-var-tracking-assignments',
+                     '-fno-delete-null-pointer-checks', '--param=allow-store-data-races=0',
+                     '-Wno-unused-but-set-variable', '-Werror=frame-larger-than=1', '-Werror', '-Wall',
+                     '-fno-jump-tables', '-nostdinc', '-mpc-relative-literal-loads', '-mabi=lp64',
+                     '-mskip-rax-setup', '-mpreferred-stack-boundary',
+                     '-mindirect-branch=thunk-extern', '-mindirect-branch-register', '-fno-code-hoisting',
+                     '-mindirect-branch=thunk-inline']
 # target optimization to be used for llvm
-TARGET_OPTIMIZATION_FLAGS = ['-O0']
+TARGET_OPTIMIZATION_FLAGS = ['-O1']
 # debug flags to be used by llvm
 DEBUG_INFO_FLAGS = ['-g']
 ARCH_TARGET = '-target'
@@ -34,7 +42,8 @@ def _run_program((workdir, cmd_to_run)):
     """
     curr_dir = os.getcwd()
     os.chdir(workdir)
-    os.system(cmd_to_run)
+    if os.system(cmd_to_run):
+        log_error("Failed to run command:", cmd_to_run)
     os.chdir(curr_dir)
 
 
@@ -138,11 +147,11 @@ def _get_llvm_build_str(clang_path, build_args, src_root_dir, target_arch, work_
     modified_build_args.append(clang_path)
     modified_build_args.append(EMIT_LLVM_FLAG)
     # Handle Target flags
-    modified_build_args.append(ARCH_TARGET)
+    """modified_build_args.append(ARCH_TARGET)
     if target_arch == ARM_32:
         modified_build_args.append(ARM_32_LLVM_ARCH)
     if target_arch == ARM_64:
-        modified_build_args.append(ARM_64_LLVM_ARCH)
+        modified_build_args.append(ARM_64_LLVM_ARCH)"""
     # handle debug flags
     for curr_d_flg in DEBUG_INFO_FLAGS:
         modified_build_args.append(curr_d_flg)
