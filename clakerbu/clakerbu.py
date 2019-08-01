@@ -24,6 +24,7 @@ def setup_args():
 
     required_named.add_argument('-n', action='store', dest='arch_num',
                                 help='Destination architecture, 32 bit (1) or 64 bit (2).', type=int,
+                                default=2,
                                 required=True)
     required_named.add_argument('-isclang', action='store_true', dest='is_clang_build',
                                 help='flag to indicate that clang was used to built the kernel')

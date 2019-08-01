@@ -45,11 +45,9 @@ def parse_compile_json(json_file_path):
                 if "loader" not in curr_command:
                     src_file = curr_command["file"]
                     if src_file.endswith(".c"):
-                    # if "drivers/" in src_file:
                         compile_commands.append(CompilationCommand(curr_args, work_dir, src_file, output_file))
                 else:
                     input_files = curr_command["files"]
-                    # if "drivers/" in output_file:
                     linker_commands.append(LinkerCommand(curr_args, work_dir, input_files, output_file))
         except Exception as e:
             log_error("Error occurred while trying to parse provided json file", json_file_path, "error", e.message)
